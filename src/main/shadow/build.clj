@@ -80,6 +80,7 @@
        (into [])))
 
 (defn extract-build-info [state]
+  (println "extract build info")
   (let [source->module
         (reduce
           (fn [index {:keys [sources module-id]}]
@@ -411,10 +412,12 @@
     ))
 
 (defn compile-start [state]
+  (println "compile start")
   (assoc state ::build-info {:compile-cycle (::build-api/compile-cycle state)
                              :compile-start (System/currentTimeMillis)}))
 
 (defn compile-complete [state]
+  (println "compile complete")
   (-> state
       (update ::build-api/compile-cycle inc)
       (assoc-in [::build-info :compile-complete] (System/currentTimeMillis))))
@@ -452,6 +455,7 @@
 
 (defn compile
   [{::keys [mode] :as state}]
+  (print "compiling" state)
   {:pre [(build-api/build-state? state)]
    :post [(build-api/build-state? %)]}
   (-> state
