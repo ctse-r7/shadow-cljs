@@ -494,6 +494,8 @@
 (defmacro with-warnings
   "given a body that produces a compilation result, collect all warnings and assoc into :warnings"
   [build-env & body]
+  (print "build-env" build-env)
+  (print "body" body)
   `(let [warnings#
          (atom [])
 
