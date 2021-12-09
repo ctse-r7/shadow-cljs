@@ -66,4 +66,13 @@
     ;; org.clojure/test.check
     camel-snake-kebab/camel-snake-kebab]}
 
-  org.clojure/test.check {:mvn/version "1.0.0"}}}
+  org.clojure/test.check {:mvn/version "1.0.0"}}
+
+ :aliases {:nREPL
+           {:extra-deps
+            {nrepl/nrepl {:mvn/version "0.8.3"}
+             cider/piggieback {:mvn/version "0.4.2"}}
+            :main-opts ["-m" "nrepl.cmdline"
+                        "-b" "0.0.0.0"
+                        "-p" "12345"
+                        "--middleware" "[cider.nrepl/cider-middleware,refactor-nrepl.middleware/wrap-refactor]"]}}}

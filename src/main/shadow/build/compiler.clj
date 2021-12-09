@@ -1,33 +1,33 @@
 (ns shadow.build.compiler
   (:require
-    [clojure.string :as str]
-    [clojure.set :as set]
-    [clojure.java.io :as io]
-    [clojure.tools.reader.reader-types :as readers]
-    [clojure.tools.reader :as reader]
-    [cljs.analyzer :as ana]
-    [cljs.compiler :as comp]
-    [cljs.spec.alpha :as cljs-spec]
-    [cljs.env :as env]
-    [cljs.tagged-literals :as tags]
-    [cljs.core] ;; do not remove, need to ensure this is loaded before compiling anything
-    [cljs.source-map :as sm]
-    [cljs.util :as cljs-util]
-    [shadow.debug :refer (?> ?-> ?->>)]
-    [shadow.lazy :as lazy]
-    [shadow.cljs.util :as util]
-    [shadow.build.warnings :as warnings]
-    [shadow.build.macros :as macros]
-    [shadow.build.cache :as cache]
-    [shadow.build.cljs-hacks :as cljs-hacks]
-    [shadow.build.cljs-bridge :as cljs-bridge]
-    [shadow.build.resource :as rc]
-    [shadow.build.ns-form :as ns-form]
-    [shadow.build.data :as data]
-    [shadow.build.closure :as closure]
-    [shadow.build.npm :as npm]
-    [shadow.jvm-log :as log]
-    [shadow.build.async :as async])
+   [clojure.string :as str]
+   [clojure.set :as set]
+   [clojure.java.io :as io]
+   [clojure.tools.reader.reader-types :as readers]
+   [clojure.tools.reader :as reader]
+   [cljs.analyzer :as ana]
+   [cljs.compiler :as comp]
+   [cljs.spec.alpha :as cljs-spec]
+   [cljs.env :as env]
+   [cljs.tagged-literals :as tags]
+   [cljs.core] ;; do not remove, need to ensure this is loaded before compiling anything
+   [cljs.source-map :as sm]
+   [cljs.util :as cljs-util]
+   [shadow.debug :refer (?> ?-> ?->>)]
+   [shadow.lazy :as lazy]
+   [shadow.cljs.util :as util]
+   [shadow.build.warnings :as warnings]
+   [shadow.build.macros :as macros]
+   [shadow.build.cache :as cache]
+   [shadow.build.cljs-hacks :as cljs-hacks]
+   [shadow.build.cljs-bridge :as cljs-bridge]
+   [shadow.build.resource :as rc]
+   [shadow.build.ns-form :as ns-form]
+   [shadow.build.data :as data]
+   [shadow.build.closure :as closure]
+   [shadow.build.npm :as npm]
+   [shadow.jvm-log :as log]
+   [shadow.build.async :as async])
   (:import (java.util.concurrent ExecutorService)
            (java.io File StringReader PushbackReader StringWriter)
            [java.util.concurrent.atomic AtomicLong]))
@@ -107,8 +107,8 @@
 
     (when (some (complement cljs-util/valid-js-id-start?) segments)
       (throw
-        (ana/error env
-          (str "Namespace " ns " has a segment starting with an invalid JavaScript identifier")))))
+       (ana/error env
+                  (str "Namespace " ns " has a segment starting with an invalid JavaScript identifier")))))
 
   ast)
 
@@ -117,16 +117,16 @@
     (when (:unexpected-name rc)
       (let [ns-sym-meta (-> form second meta)]
         (ana/warning
-          ::unexpected-name
+         ::unexpected-name
           ;; want the warning to highlight the symbol not the ns-form
-          (merge env (select-keys ns-sym-meta [:line :column :end-line :end-column]))
-          (select-keys rc [:resource-name :expected-name :file :url]))))
+         (merge env (select-keys ns-sym-meta [:line :column :end-line :end-column]))
+         (select-keys rc [:resource-name :expected-name :file :url]))))
 
     (-> (ns-form/parse form)
         (ns-form/rewrite-ns-aliases build-state)
         (ns-form/rewrite-js-deps build-state)
         (cond->
-          (:macros-ns opts)
+         (:macros-ns opts)
           (update :name #(symbol (str % "$macros"))))
         (assoc :env env :form form :op :ns)
         (ns-clash-check))))
@@ -155,8 +155,7 @@
           ;; assoc into ns so cache can restore it
           (swap! env/*compiler* update-in [::ana/namespaces protocol-ns :shadow/protocol-prefixes] util/set-conj pprefix)
           ;; used by externs inference since it otherwise can't identify protocol properties
-          (swap! env/*compiler* update :shadow/protocol-prefixes util/set-conj pprefix)
-          ))))
+          (swap! env/*compiler* update :shadow/protocol-prefixes util/set-conj pprefix)))))
   ast)
 
 (defn find-js-require-pass [env ast opts]
@@ -170,8 +169,7 @@
         (let [require (second form)
               ns (-> env :ns :name)]
           (when (string? require)
-            (swap! env/*compiler* update-in [::ana/namespaces ns :shadow/js-requires] util/set-conj require)
-            )))))
+            (swap! env/*compiler* update-in [::ana/namespaces ns :shadow/js-requires] util/set-conj require))))))
   ast)
 
 ;; I don't want to use with-redefs but I also don't want to replace the default
@@ -189,10 +187,10 @@
 
 (def ana-js-globals
   (into {}
-    (map #(vector % {:op :js-var :name % :ns 'js})
-      '(alert window document console escape unescape
-         screen location navigator history location
-         global process require module exports))))
+        (map #(vector % {:op :js-var :name % :ns 'js})
+             '(alert window document console escape unescape
+                     screen location navigator history location
+                     global process require module exports))))
 
 (defn empty-env
   "Construct an empty analysis environment. Required to analyze forms."
@@ -232,7 +230,7 @@
      (let [opts
            (-> (get-in state [:compiler-env :options])
                (cond->
-                 (:macros-ns compile-state)
+                (:macros-ns compile-state)
                  (assoc :macros-ns true)))
 
            injected-forms-ref
@@ -242,11 +240,10 @@
            base-env
            (-> (empty-env state ns)
                (cond->
-                 repl-context?
+                repl-context?
                  (assoc ::repl-context true
                         :context :expr
                         :def-emits-var true)))
-
 
            result
            (binding [*analyze-top*
@@ -279,9 +276,9 @@
   [{:keys [resource-name cljc reader-features] :as init} reduce-fn cljs-source]
   (let [eof-sentinel (Object.)
         opts (merge
-               {:eof eof-sentinel}
-               (when cljc
-                 {:read-cond :allow :features reader-features}))
+              {:eof eof-sentinel}
+              (when cljc
+                {:read-cond :allow :features reader-features}))
         in (readers/indexing-push-back-reader (PushbackReader. (StringReader. cljs-source)) 1 resource-name)]
 
     (loop [{:keys [ns reader-aliases] :as compile-state} init]
@@ -315,9 +312,7 @@
         (if (identical? form eof-sentinel)
           ;; eof
           compile-state
-          (recur (reduce-fn compile-state form)))))
-
-    ))
+          (recur (reduce-fn compile-state form)))))))
 
 (defmulti shadow-emit
   (fn [build-state ast]
@@ -333,7 +328,7 @@
         ;; when using :npm-module we don't actually want to output
         ;; the goog.exportSymbol call since that will create a global variable
         ;; we instead generated module.exports from the export metadata
-        (= :js (get-in build-state [:build-options :module-format]))
+       (= :js (get-in build-state [:build-options :module-format]))
         (dissoc :export))
       (comp/emit)))
 
@@ -384,15 +379,14 @@
         ;; in release mode that will only be done once since the GCC will complain otherwise
         ;; and we don't need to deal with code-reloading or the REPL anyways
         (when (= :shadow-js type)
-          (comp/emitln "var " ns "=" (npm/shadow-js-require rc))
-          )))))
+          (comp/emitln "var " ns "=" (npm/shadow-js-require rc)))))))
 
 (defn update-ns-reader-aliases [{:keys [ns-info] :as compile-state}]
   (update compile-state :reader-aliases
-    merge
-    (:requires ns-info)
-    (:require-macros ns-info)
-    (:reader-aliases ns-info)))
+          merge
+          (:requires ns-info)
+          (:require-macros ns-info)
+          (:reader-aliases ns-info)))
 
 (defn default-analyze-cljs
   [{:keys [last-progress-ref] :as state} {:keys [macros-ns] :as compile-state} form]
@@ -413,12 +407,11 @@
       (-> compile-state
           (update :ast conj ast)
           (cond->
-            (= op :ns)
+           (= op :ns)
             (-> (assoc
-                  :ns (:name ast)
-                  :ns-info (dissoc ast :env))
-                (update-ns-reader-aliases))
-            )))))
+                 :ns (:name ast)
+                 :ns-info (dissoc ast :env))
+                (update-ns-reader-aliases)))))))
 
 (defn ns-wildcard-match? [pattern ns]
   (let [s (cond
@@ -445,19 +438,17 @@
                (if (and ns (seq ignore) (some #(ns-wildcard-match? % ns) ignore))
                  false
                  (or (not (seq warning-types))
-                     (contains? warning-types warning)
-                     )))))))
+                     (contains? warning-types warning))))))))
 
 (comment
   (should-warning-throw?
-    {:compiler-options
-     {:warnings-as-errors
-      {:ignore #{'foo.*}
+   {:compiler-options
+    {:warnings-as-errors
+     {:ignore #{'foo.*}
        ;; :warning-types #{:undeclared-var}
-       }}}
-    {:ns 'foo.bar}
-    {:warning :undeclared-var}))
-
+      }}}
+   {:ns 'foo.bar}
+   {:warning :undeclared-var}))
 
 (defn warning-collector [state warnings warning-type env extra]
   ;; FIXME: currently there is no way to turn off :infer-externs
@@ -494,8 +485,8 @@
 (defmacro with-warnings
   "given a body that produces a compilation result, collect all warnings and assoc into :warnings"
   [build-env & body]
-  (print "build-env" build-env)
-  (print "body" body)
+  (println "build-env" build-env)
+  (println "body" body)
   `(let [warnings#
          (atom [])
 
@@ -511,17 +502,17 @@
   [state compile-state cljs-source]
   (with-warnings state
     (do-analyze-cljs-string
-      compile-state
-      (partial default-analyze-cljs state)
-      cljs-source)))
+     compile-state
+     (partial default-analyze-cljs state)
+     cljs-source)))
 
 (defn analyze-cljs-seq
   [state compile-state cljs-forms]
   (with-warnings state
     (reduce
-      (partial default-analyze-cljs state)
-      compile-state
-      cljs-forms)))
+     (partial default-analyze-cljs state)
+     compile-state
+     cljs-forms)))
 
 (defn make-runtime-setup
   [state]
@@ -529,7 +520,6 @@
     :none ""
     ;; default to console
     "cljs.core.enable_console_print_BANG_();\n"))
-
 
 (defn trigger-ready! [state rc]
   (when-let [ready-signal-fn (:ready-signal-fn state)]
@@ -545,24 +535,23 @@
 
 (defn walk-ast [{:keys [children] :as ast} init visit-fn]
   (reduce
-    (fn [result child-key]
-      (let [child (get ast child-key)]
-        (cond
-          (map? child)
-          (walk-ast child result visit-fn)
+   (fn [result child-key]
+     (let [child (get ast child-key)]
+       (cond
+         (map? child)
+         (walk-ast child result visit-fn)
 
-          (sequential? child)
-          (reduce
-            (fn [result child]
-              (walk-ast child result visit-fn))
-            result
-            child)
+         (sequential? child)
+         (reduce
+          (fn [result child]
+            (walk-ast child result visit-fn))
+          result
+          child)
 
-          :else
-          (throw (ex-info "unexpected :children entry, should be map or sequential?" {:ast ast}))
-          )))
-    (visit-fn init ast)
-    children))
+         :else
+         (throw (ex-info "unexpected :children entry, should be map or sequential?" {:ast ast})))))
+   (visit-fn init ast)
+   children))
 
 (defn do-compile-cljs-resource
   [{:keys [compiler-options] :as state}
@@ -590,8 +579,8 @@
               (-> ana/*cljs-warnings*
                   (merge warnings)
                   (cond->
-                    (or (and (= :auto infer-externs) (not from-jar))
-                        (= :all infer-externs))
+                   (or (and (= :auto infer-externs) (not from-jar))
+                       (= :all infer-externs))
                     (assoc :infer-warning true)))
 
               ana/*unchecked-arrays*
@@ -619,7 +608,7 @@
                    :reader-features (data/get-reader-features state)
                    :reader-aliases reader/*alias-map*}
                   (cond->
-                    (:macros-ns rc)
+                   (:macros-ns rc)
                     (assoc :macros-ns true)))
 
               {:keys [ns ast] :as output}
@@ -654,14 +643,14 @@
                 ;; only emitting vars that were actually used
                 used-vars
                 (reduce
-                  (fn [result ast-entry]
-                    (walk-ast ast-entry result
-                      (fn [result {:keys [op] :as ast}]
-                        (if-not (contains? #{:var :js-var} op)
-                          result
-                          (conj result (:name ast))))))
-                  #{}
-                  ast)]
+                 (fn [result ast-entry]
+                   (walk-ast ast-entry result
+                             (fn [result {:keys [op] :as ast}]
+                               (if-not (contains? #{:var :js-var} op)
+                                 result
+                                 (conj result (:name ast))))))
+                 #{}
+                 ast)]
 
             (binding [comp/*source-map-data* sm-ref
                       comp/*source-map-data-gen-col* (AtomicLong.)
@@ -672,11 +661,11 @@
                     (shadow-emit state ast-entry)
                     (catch Exception e
                       (throw (ex-info "Failed to emit form"
-                               {:tag ::emit-ex
-                                :resource-name resource-name
-                                :line (ana/gets ast-entry :env :line)
-                                :column (ana/gets ast-entry :env :column)}
-                               e))))
+                                      {:tag ::emit-ex
+                                       :resource-name resource-name
+                                       :line (ana/gets ast-entry :env :line)
+                                       :column (ana/gets ast-entry :env :column)}
+                                      e))))
                   (.flush sw)
                   (let [size-after (-> sw (.getBuffer) (.length))
                         diff (- size-after size-before)]
@@ -698,9 +687,8 @@
                 (dissoc :ast)
                 (update :warnings into @size-warnings-ref)
                 (cond->
-                  (= ns 'cljs.core)
-                  (update :js str "\n" (make-runtime-setup state))
-                  ))))))))
+                 (= ns 'cljs.core)
+                  (update :js str "\n" (make-runtime-setup state))))))))))
 
 (defn get-cache-file-for-rc
   ^File [state {:keys [resource-name] :as rc}]
@@ -718,9 +706,9 @@
     ;; which will always have a new timestamp
     (-> {:SHADOW-TIMESTAMP SHADOW-TIMESTAMP}
         (util/reduce->
-          (fn [cache-map id]
-            (assoc cache-map id (get-in state [:sources id :cache-key])))
-          deps))))
+         (fn [cache-map id]
+           (assoc cache-map id (get-in state [:sources id :cache-key])))
+         deps))))
 
 (def cache-affecting-options
   ;; paths into the build state
@@ -795,31 +783,31 @@
             (when (and (= cache-key-map (:cache-keys cache-data))
                        (macros/check-clj-info (:clj-info cache-data))
                        (every?
-                         #(= (get-in state %)
-                             (get-in cache-data [:compiler-options %]))
-                         cache-affecting-options)
+                        #(= (get-in state %)
+                            (get-in cache-data [:compiler-options %]))
+                        cache-affecting-options)
 
                        ;; check if lazy loaded namespaces that a given ns uses were moved to different modules
                        (let [lazy-refs (::lazy/ns-refs ana-data)]
                          (reduce-kv
-                           (fn [_ ns assigned-module]
-                             (or (= assigned-module (lazy/module-for-ns compiler-env ns))
-                                 (reduced false)))
-                           true
-                           lazy-refs))
+                          (fn [_ ns assigned-module]
+                            (or (= assigned-module (lazy/module-for-ns compiler-env ns))
+                                (reduced false)))
+                          true
+                          lazy-refs))
 
                        ;; check if any of the referenced resources were updated
                        (let [resource-refs (:shadow.resource/resource-refs ana-data)]
                          (reduce-kv
-                           (fn [_ path prev-mod]
-                             (let [rc (io/resource path)]
+                          (fn [_ path prev-mod]
+                            (let [rc (io/resource path)]
                                ;; check if the timestamps still match
                                ;; if the rc is gone or the timestamp changed invalidate the cache
-                               (if (and rc (= prev-mod (util/url-last-modified rc)))
-                                 true
-                                 (reduced false))))
-                           true
-                           resource-refs)))
+                              (if (and rc (= prev-mod (util/url-last-modified rc)))
+                                true
+                                (reduced false))))
+                          true
+                          resource-refs)))
 
               ;; restore analysis data
               (let [{:keys [ns]} cache-data]
@@ -876,10 +864,10 @@
 
               cache-compiler-options
               (reduce
-                (fn [cache-options option-path]
-                  (assoc cache-options option-path (get-in state option-path)))
-                {}
-                cache-affecting-options)
+               (fn [cache-options option-path]
+                 (assoc cache-options option-path (get-in state option-path)))
+               {}
+               cache-affecting-options)
 
               ns-str
               (str ns)
@@ -891,13 +879,13 @@
 
               ns-specs
               (reduce-kv
-                (fn [m k v]
-                  (if-not (spec-filter-fn k)
-                    m
-                    (assoc m k v)))
-                {}
+               (fn [m k v]
+                 (if-not (spec-filter-fn k)
+                   m
+                   (assoc m k v)))
+               {}
                 ;; this is {spec-kw|sym raw-spec-form}
-                @cljs-spec/registry-ref)
+               @cljs-spec/registry-ref)
 
               ;; this is a #{fqn-var-sym ...}
               ns-spec-vars
@@ -980,7 +968,7 @@
                              :ex-data data}
 
                             (cond->
-                              ex-kind
+                             ex-kind
                               (assoc :ex-kind ex-kind)
 
                               type
@@ -996,8 +984,7 @@
                               (assoc :source-excerpt
                                      (let [[source-excerpt]
                                            (warnings/get-source-excerpts source [{:line line :column column}])]
-                                       source-excerpt
-                                       ))))]
+                                       source-excerpt))))]
 
                     (throw (ex-info (format "failed to compile resource: %s" resource-id) err-data e)))))]
 
@@ -1017,8 +1004,7 @@
     ;; always recompile files with warnings
     (if (and output (not (seq (:warnings output))))
       output
-      (maybe-compile-cljs state src)
-      )))
+      (maybe-compile-cljs state src))))
 
 (defn par-compile-one
   [{:keys [last-progress-ref] :as state}
@@ -1055,11 +1041,11 @@
                 (let [pending (set/difference requires ready)]
 
                   (swap! errors-ref assoc resource-id
-                    (ex-info (format "aborted par-compile, %s still waiting for %s"
-                               resource-id
-                               pending)
-                      {:aborted resource-id
-                       :pending pending}))))
+                         (ex-info (format "aborted par-compile, %s still waiting for %s"
+                                          resource-id
+                                          pending)
+                                  {:aborted resource-id
+                                   :pending pending}))))
 
               (recur (inc idle-count)))
 
@@ -1070,8 +1056,7 @@
             (catch Throwable e ;; asserts not covered by Exception
               (log/debug-ex e ::par-compile-ex {:resource-id resource-id})
               (swap! errors-ref assoc resource-id e)
-              src
-              )))))))
+              src)))))))
 
 (defn load-core []
   ;; cljs.core is already required and loaded when this is called
@@ -1106,12 +1091,12 @@
             ;; the resource itself does not provide the alias
             (let [provides
                   (reduce
-                    (fn [provides provide]
-                      (if-let [alias (get-in state [:ns-aliases-reverse provide])]
-                        (conj provides alias)
-                        provides))
-                    provides
-                    provides)]
+                   (fn [provides provide]
+                     (if-let [alias (get-in state [:ns-aliases-reverse provide])]
+                       (conj provides alias)
+                       provides))
+                   provides
+                   provides)]
 
               (swap! ready set/union provides)))
 
@@ -1154,14 +1139,13 @@
           (throw (ex-info "compilation failed" {:tag ::fail-many :resource-ids (keys errs) :errors errs}))))
 
       (reduce
-        (fn [state {:keys [resource-id] :as output}]
-          (when (nil? output)
-            (throw (ex-info "a compile task returned nil?" {})))
-          (assert resource-id)
-          (update state :output assoc resource-id output))
-        (dissoc state :ready-signal-fn)
-        task-results)
-      )))
+       (fn [state {:keys [resource-id] :as output}]
+         (when (nil? output)
+           (throw (ex-info "a compile task returned nil?" {})))
+         (assert resource-id)
+         (update state :output assoc resource-id output))
+       (dissoc state :ready-signal-fn)
+       task-results))))
 
 (defn seq-compile-cljs-sources
   "compiles with just the main thread, can do partial compiles assuming deps are compiled"
@@ -1169,20 +1153,20 @@
   (cljs-bridge/with-compiler-env state
     (load-core)
     (reduce
-      (fn [state {:keys [resource-id type] :as src}]
-        (assert (= :cljs type))
-        (let [output (generate-output-for-source state src)]
-          (assoc-in state [:output resource-id] output)))
-      state
-      sources)))
+     (fn [state {:keys [resource-id type] :as src}]
+       (assert (= :cljs type))
+       (let [output (generate-output-for-source state src)]
+         (assoc-in state [:output resource-id] output)))
+     state
+     sources)))
 
 (defn use-extern-properties [{:keys [js-properties] :as state}]
   ;; this is used by cljs-hacks/infer-externs-dot and should contains all known properties from externs (strings)
   (assoc-in state [:compiler-env :shadow/js-properties]
-    (set/union
-      js-properties ;; from JS deps
-      (::closure/extern-properties state) ;; from CC externs
-      )))
+            (set/union
+             js-properties ;; from JS deps
+             (::closure/extern-properties state) ;; from CC externs
+             )))
 
 (defn compile-cljs-sources [{:keys [executor last-progress-ref] :as state} sources non-cljs-provides]
   ;; bump when starting a compile so watch doesn't cause timeouts
@@ -1193,7 +1177,7 @@
         (closure/load-extern-properties)
         (use-extern-properties)
         (cond->
-          (and executor (not (false? parallel-build)))
+         (and executor (not (false? parallel-build)))
           (par-compile-cljs-sources sources non-cljs-provides)
 
           ;; seq compile doesn't really need the provides since it doesn't need to coordinate threads
@@ -1202,13 +1186,13 @@
 
 (defn copy-source-to-output [state sources]
   (reduce
-    (fn [state {:keys [resource-id] :as src}]
-      (let [source (data/get-source-code state src)]
-        (update state :output assoc resource-id {:resource-id resource-id
-                                                 :source source
-                                                 :js source})))
-    state
-    sources))
+   (fn [state {:keys [resource-id] :as src}]
+     (let [source (data/get-source-code state src)]
+       (update state :output assoc resource-id {:resource-id resource-id
+                                                :source source
+                                                :js source})))
+   state
+   sources))
 
 (defn maybe-closure-convert [{:keys [output] :as state} sources convert-fn]
   ;; incremental compiles might not need recompiling
@@ -1265,17 +1249,17 @@
              (into #{}))]
 
     (update-in state [:sources resource-id :cache-key]
-      (fn [key]
+               (fn [key]
         ;; FIXME: this still isn't clean but nothing should be allowed to modify
         ;; cache-key beyond this point
         ;; must make sure we don't keep appending the same data in watch
-        (-> (take-while #(not= ::resolve %) key)
-            (vec)
-            (conj
-              ::resolve
-              {:require-id require-id
-               :deps-ids require-ids
-               :deps-syms deps-syms}))))))
+                 (-> (take-while #(not= ::resolve %) key)
+                     (vec)
+                     (conj
+                      ::resolve
+                      {:require-id require-id
+                       :deps-ids require-ids
+                       :deps-syms deps-syms}))))))
 
 (defn throw-js-errors-now! [state]
   (doseq [{:keys [file js-errors source] :as src} (data/get-build-sources state)
@@ -1326,8 +1310,7 @@
                 (update-in [:sources src-id] assoc :require-id alias)
                 (assoc-in [:require-id->sym alias] ns)
                 (assoc-in [:sym->require-id ns] alias)
-                (recur more (inc idx))
-                )))))))
+                (recur more (inc idx)))))))))
 
 (defn compile-all
   "compile a list of sources by id,
@@ -1431,20 +1414,20 @@
                                       :shadow/goog-provides goog-provides})
 
          (assoc-in [:compiler-env ::lazy/ns->mod]
-           (->> (for [{:keys [module-id sources]} (:build-modules state)
-                      src-id sources
-                      :let [module-s (name module-id)
-                            {:keys [provides] :as rc} (get-in state [:sources src-id])]
-                      provide provides]
-                  [provide module-s])
-                (into {})))
+                   (->> (for [{:keys [module-id sources]} (:build-modules state)
+                              src-id sources
+                              :let [module-s (name module-id)
+                                    {:keys [provides] :as rc} (get-in state [:sources src-id])]
+                              provide provides]
+                          [provide module-s])
+                        (into {})))
 
          ;; order of this is important
          ;; CLJS first since all it needs are the provided names
          (cond->
            ;; goog
            ;; release builds go through the closure compiler and we want to avoid processing goog sources twice
-           (and (= :release mode) (seq goog))
+          (and (= :release mode) (seq goog))
            (copy-source-to-output goog)
 
            (and (= :dev mode) (seq goog))

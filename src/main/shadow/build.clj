@@ -1,24 +1,24 @@
 (ns shadow.build
   (:refer-clojure :exclude (resolve compile flush))
   (:require
-    [clojure.java.io :as io]
-    [clojure.spec.alpha :as s]
-    [shadow.jvm-log :as log]
-    [clojure.set :as set]
-    [shadow.cljs.util :as util]
-    [shadow.build.api :as build-api]
-    [shadow.build.config :as config]
-    [shadow.build.closure :as closure]
-    [shadow.build.warnings :as warnings]
-    [shadow.build.modules :as modules]
-    [shadow.build.data :as data]
-    [shadow.build.log :as build-log]
-    [shadow.build.async :as async]
-    [shadow.debug :refer (?> ?-> ?->>)]
-    [shadow.cljs.devtools.cljs-specs] ;; FIXME: move these
-    [shadow.build.macros :as macros]
-    [shadow.build.classpath :as classpath]
-    [shadow.build.npm :as npm]))
+   [clojure.java.io :as io]
+   [clojure.spec.alpha :as s]
+   [shadow.jvm-log :as log]
+   [clojure.set :as set]
+   [shadow.cljs.util :as util]
+   [shadow.build.api :as build-api]
+   [shadow.build.config :as config]
+   [shadow.build.closure :as closure]
+   [shadow.build.warnings :as warnings]
+   [shadow.build.modules :as modules]
+   [shadow.build.data :as data]
+   [shadow.build.log :as build-log]
+   [shadow.build.async :as async]
+   [shadow.debug :refer (?> ?-> ?->>)]
+   [shadow.cljs.devtools.cljs-specs] ;; FIXME: move these
+   [shadow.build.macros :as macros]
+   [shadow.build.classpath :as classpath]
+   [shadow.build.npm :as npm]))
 
 (defn enhance-warnings
   "adds source excerpts to warnings if line information is available"
@@ -32,13 +32,13 @@
 
       (not (string? source))
       (into []
-        (comp
-          (distinct)
-          (map (fn [x]
-                 (assoc x
-                   :resource-name resource-name
-                   :resource-id resource-id))))
-        warnings)
+            (comp
+             (distinct)
+             (map (fn [x]
+                    (assoc x
+                           :resource-name resource-name
+                           :resource-id resource-id))))
+            warnings)
 
       :else
       (let [warnings
@@ -54,16 +54,15 @@
         (->> (map (fn [warning source-excerpt]
                     (-> warning
                         (assoc
-                          :resource-name resource-name
-                          :resource-id resource-id)
+                         :resource-name resource-name
+                         :resource-id resource-id)
                         (cond->
-                          file
+                         file
                           (assoc :file (.getAbsolutePath file))
                           source-excerpt
                           (assoc :source-excerpt source-excerpt))))
-               warnings source-excerpts)
-             (into [])
-             )))))
+                  warnings source-excerpts)
+             (into []))))))
 
 ;; FIXME: this currently only returns recently compiled CLJS sources
 (defn resources-compiled-recently
@@ -71,26 +70,25 @@
   [{:keys [build-sources compile-start] :as state}]
   (->> build-sources
        (filter
-         (fn [src-id]
-           (let [{:keys [cached compiled-at] :as rc}
-                 (get-in state [:output src-id])]
+        (fn [src-id]
+          (let [{:keys [cached compiled-at] :as rc}
+                (get-in state [:output src-id])]
 
-             (and (not cached) (number? compiled-at) (> compiled-at compile-start))
-             )))
+            (and (not cached) (number? compiled-at) (> compiled-at compile-start)))))
        (into [])))
 
 (defn extract-build-info [state]
   (println "extract build info")
   (let [source->module
         (reduce
-          (fn [index {:keys [sources module-id]}]
-            (reduce
-              (fn [index source]
-                (assoc index source module-id))
-              index
-              sources))
-          {}
-          (:build-modules state))
+         (fn [index {:keys [sources module-id]}]
+           (reduce
+            (fn [index source]
+              (assoc index source module-id))
+            index
+            sources))
+         {}
+         (:build-modules state))
 
         compiled-sources
         (into #{} (resources-compiled-recently state))
@@ -130,23 +128,23 @@
 
 (defn execute-hooks [{::keys [build-id] :as state} stage]
   (reduce-kv
-    (fn [state hook-id hook-fn]
-      (try
-        (util/with-logged-time [state {:type ::process-hook
-                                       :stage stage
-                                       :build-id build-id
-                                       :hook-id hook-id}]
-          (hook-fn state))
-        (catch Exception e
-          (throw (ex-info
-                   (format "Hook %s failed in stage %s" hook-id stage)
-                   {:tag ::hook-error
-                    :build-id build-id
-                    :stage stage
-                    :hook-id hook-id}
-                   e)))))
-    state
-    (get-in state [:build-hooks stage])))
+   (fn [state hook-id hook-fn]
+     (try
+       (util/with-logged-time [state {:type ::process-hook
+                                      :stage stage
+                                      :build-id build-id
+                                      :hook-id hook-id}]
+         (hook-fn state))
+       (catch Exception e
+         (throw (ex-info
+                 (format "Hook %s failed in stage %s" hook-id stage)
+                 {:tag ::hook-error
+                  :build-id build-id
+                  :stage stage
+                  :hook-id hook-id}
+                 e)))))
+   state
+   (get-in state [:build-hooks stage])))
 
 (defn process-stage
   [{::keys [config mode target-fn] :as state} stage optional?]
@@ -162,7 +160,7 @@
           (target-fn before))]
     (if (and (not optional?) (identical? before after))
       (throw (ex-info "process didn't do anything on non-optional stage"
-               {:stage stage :mode mode :config config}))
+                      {:stage stage :mode mode :config config}))
       (-> after
           (execute-hooks stage)
           (assoc-in [::build-info :timings stage :exit] (System/currentTimeMillis))))))
@@ -171,7 +169,7 @@
   (let [mode-opts (get config mode)]
     (-> config
         (cond->
-          mode-opts
+         mode-opts
           (build-api/deep-merge mode-opts))
         (dissoc :release :dev))))
 
@@ -201,51 +199,50 @@
           (require target-ns)
           (catch Exception e
             (throw (ex-info
-                     (format "failed to require :target %s for build %s" target build-id)
-                     {:tag ::get-target-fn
-                      :build-id build-id
-                      :target target
-                      :target-ns target-ns
-                      :target-fn-sym target-fn-sym}
-                     e)))))
+                    (format "failed to require :target %s for build %s" target build-id)
+                    {:tag ::get-target-fn
+                     :build-id build-id
+                     :target target
+                     :target-ns target-ns
+                     :target-fn-sym target-fn-sym}
+                    e)))))
 
       (let [fn (ns-resolve target-ns target-fn-sym)]
         (when-not fn
           (throw (ex-info (str "target-fn " target-fn-sym " not found") {:target target})))
 
-        fn
-        ))))
+        fn))))
 
 (defn configure-hooks-from-config [{::keys [build-id] :as state} build-hooks]
   (reduce-kv
-    (fn [state hook-idx [hook-sym & args]]
-      (try
+   (fn [state hook-idx [hook-sym & args]]
+     (try
         ;; require the ns
-        (locking target-require-lock
-          (-> hook-sym namespace symbol require))
+       (locking target-require-lock
+         (-> hook-sym namespace symbol require))
 
-        (let [hook-var (find-var hook-sym)
-              {::keys [stages stage]} (meta hook-var)]
-          (reduce
-            (fn [state stage]
-              (assoc-in state [:build-hooks stage [hook-idx hook-sym]]
-                (fn [build-state]
-                  (let [result (apply hook-var build-state args)]
-                    (when-not (build-api/build-state? result)
-                      (throw (ex-info "hook returned invalid result" {:type ::invalid-hook-result
-                                                                      :hook-sym hook-sym
-                                                                      :build-id build-id
-                                                                      :stage stage})))
-                    result))))
-            state
-            (or stages [stage])))
-        (catch Exception e
-          (log/warn-ex e ::hook-config-ex {:hook-idx hook-idx
-                                           :hook-sym hook-sym
-                                           :build-id build-id})
-          state)))
-    state
-    build-hooks))
+       (let [hook-var (find-var hook-sym)
+             {::keys [stages stage]} (meta hook-var)]
+         (reduce
+          (fn [state stage]
+            (assoc-in state [:build-hooks stage [hook-idx hook-sym]]
+                      (fn [build-state]
+                        (let [result (apply hook-var build-state args)]
+                          (when-not (build-api/build-state? result)
+                            (throw (ex-info "hook returned invalid result" {:type ::invalid-hook-result
+                                                                            :hook-sym hook-sym
+                                                                            :build-id build-id
+                                                                            :stage stage})))
+                          result))))
+          state
+          (or stages [stage])))
+       (catch Exception e
+         (log/warn-ex e ::hook-config-ex {:hook-idx hook-idx
+                                          :hook-sym hook-sym
+                                          :build-id build-id})
+         state)))
+   state
+   build-hooks))
 
 ;; FIXME: this is kinda dirty but saves passing around a secondary js-options along npm
 (defn copy-js-options-to-npm [{:keys [mode js-options] :as state}]
@@ -263,8 +260,7 @@
       state
       (-> state
           (update :ns-aliases merge m)
-          (update :ns-aliases-reverse merge (set/map-invert m)))
-      )))
+          (update :ns-aliases-reverse merge (set/map-invert m))))))
 
 (defn get-build-defaults [state]
   (get-in state [:runtime-config :build-defaults] {}))
@@ -302,9 +298,9 @@
          npm-config
          (merge
            ;; global config so it doesn't have to be configured per build
-           (select-keys (:js-options runtime-config) js-options-keys)
+          (select-keys (:js-options runtime-config) js-options-keys)
            ;; build config supersedes global
-           (select-keys (:js-options config) js-options-keys))
+          (select-keys (:js-options config) js-options-keys))
 
          ;; don't use shared npm instance since lookups are cached and
          ;; js-package-dirs may affect what things resolve to
@@ -315,26 +311,26 @@
      ;; the namespace that it is in may have added to the multi-spec
      (when-not (s/valid? ::config/build+target config)
        (throw (ex-info "invalid build config" (assoc (s/explain-data ::config/build+target config)
-                                                :tag ::config
-                                                :config config))))
+                                                     :tag ::config
+                                                     :config config))))
 
      (when (contains? config :source-paths)
        (throw (ex-info
-                ":source-paths only work at the top level and not per build."
-                {:tag ::source-paths :config config})))
+               ":source-paths only work at the top level and not per build."
+               {:tag ::source-paths :config config})))
 
      (let [externs-file (io/file "externs" (str (name build-id) ".txt"))
            {:keys [devtools]} config]
 
        (-> build-state
            (assoc
-             :build-id build-id
-             ::build-id build-id
-             ::stage :init
-             ::config config
-             ::target-fn target-fn
-             :mode mode
-             ::mode mode)
+            :build-id build-id
+            ::build-id build-id
+            ::stage :init
+            ::config config
+            ::target-fn target-fn
+            :mode mode
+            ::mode mode)
            ;; FIXME: not setting this for :release builds may cause errors
            ;; http://dev.clojure.org/jira/browse/CLJS-2002
            (update :runtime assoc :print-fn :console)
@@ -342,7 +338,7 @@
            (build-api/with-npm npm)
 
            (cond->
-             (seq build-hooks)
+            (seq build-hooks)
              (configure-hooks-from-config build-hooks)
 
              ;; generic dev mode, each target can overwrite in :init stage
@@ -394,12 +390,11 @@
            ;; when it is not equal to :none
            ;; so we overwrite whatever configure did since dev/release configs are shared
            (cond->
-             (= :dev mode)
+            (= :dev mode)
              (assoc-in [:compiler-options :optimizations] :none))
 
            (copy-ns-aliases)
-           (copy-js-options-to-npm)
-           )))))
+           (copy-js-options-to-npm))))))
 
 (defn- extract-build-macros [{:keys [build-sources] :as state}]
   (let [build-macros
@@ -408,8 +403,7 @@
              (filter #(= :cljs (:type %)))
              (map :macro-requires)
              (reduce set/union #{}))]
-    (assoc state :build-macros build-macros)
-    ))
+    (assoc state :build-macros build-macros)))
 
 (defn compile-start [state]
   (println "compile start")
@@ -455,9 +449,9 @@
 
 (defn compile
   [{::keys [mode] :as state}]
-  (print "compiling" state)
   {:pre [(build-api/build-state? state)]
    :post [(build-api/build-state? %)]}
+  (println "compiling" state)
   (-> state
       (maybe-load-data-readers)
       (compile-start)
@@ -475,7 +469,7 @@
    :post [(build-api/build-state? %)]}
   (-> state
       (cond->
-        (and (= :release mode) (not skip-optimize))
+       (and (= :release mode) (not skip-optimize))
         (-> (process-stage :optimize-prepare true)
             (build-api/optimize)
             (process-stage :optimize-finish true)))))
@@ -500,7 +494,6 @@
       ;; but ensures that the build is actually complete with no pending tasks
       (async/wait-for-pending-tasks!)
       (assoc-in [::build-info :flush-complete] (System/currentTimeMillis))))
-
 
 (defn log [state log-event]
   {:pre [(build-api/build-state? state)]}
